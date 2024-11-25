@@ -6,7 +6,7 @@ function usage() {
       -t string   string to translate (you can send mulitple strings separated by '|')
       -l locale   locale  (use 'all' to get all available translations)
       -f          fuzzy match (exact match otherwise)
-      -m          make the locale json files in $LOCALEDIR
+      -m          make the locale json files in $LOCALESDIR
       -a          report on coverage in previously created locale files
       -e          make locales with every available translation string 
       " >&2

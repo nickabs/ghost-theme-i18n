@@ -66,6 +66,7 @@ function tFormat() {
 function tMatch() {
     # input: from|to|source|locale .eg:
     # Sign in|Se connecter|tmp/Ghost/ghost/i18n/locales/fr/ghost.json|fr
+    #
 
     gawk ' BEGIN { FS="|" } { 
         from=$1; to=$2; source=$3; locale=$4
@@ -132,23 +133,22 @@ function getFormattedTranslations() {
 
 # print to stdout if "stdout" supplied as parameter
 function mkLocaleFiles() {
-    gawk 'BEGIN { FS="|"; locale="" } {
+    gawk 'BEGIN { FS="|"; locale="" ; out="/dev/stdout"; ct=0} {
+        ct++
         if (locale == $1 ) 
             print "," >> out
         else {
             if (locale) 
                 print "\n}" >> out # finish previous file
             locale = $1
-                if (outputlocation == "stdout" )
-                    out="/dev/stdout"
-                else
+                if (outputlocation != "stdout" ) # default is set in BEGIN
                     out=sprintf("%s/%s.json",outputlocation,$1)
             print "{" > out
             if (outputlocation != "stdout") 
                 printf("creating %s\n",out)
         }
         printf("\t%s : %s",$3,$4) >> out;
-    } END { print "\n}" >>out }' outputlocation=$1
+    } END { if (ct> 0) print "\n}" >>out }' outputlocation=$1
 }
 function mkEnLocationFile() {
     echo $T | gawk '{ 
@@ -295,7 +295,6 @@ if [ "$MAKE" ]; then
     echo coverage report
     coverage
 else
-    echo "# Options"
     getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" | gawk -F'|' '{ split($0,a,"/"); printf("%s/%-20s%s | %s\n", $1, a[2], $3, $4) }'
     echo "# Selected"
     getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" "dedupe" | mkLocaleFiles stdout

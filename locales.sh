@@ -2,7 +2,7 @@
 function usage() {
     echo "USAGE: $0 [-c ] [ -a ] [ -t string ] [ -l locale ] [ -fm ] 
     Options:
-      -c clone    clone repos to $TMPDIR
+      -r repos    clone/pull repos to $TMPDIR
       -t string   string to translate (you can send mulitple strings separated by '|')
       -l locale   locale  (use 'all' to get all available translations)
       -f          fuzzy match (exact match otherwise)
@@ -27,12 +27,12 @@ function listRepos() {
 "
 }
 
-function clone() {
+function repos() {
     for repo in $(listRepos) 
     do
         gitdir=$(echo $repo |gawk '{  printf("%s/%s",tmpdir,gensub(/.*\/(.*).git/,"\\1","g", $0)) }' tmpdir=$TMPDIR)
         if [ -d "$gitdir" ]; then
-            echo "$gitdir exists - skipping"
+            cd $gitdir ; git pull ; cd -
         else
             git clone $repo $gitdir
         fi
@@ -217,17 +217,17 @@ export TMPDIR=tmp
 export LOCALESDIR=${TMPDIR}/locales
 export ENLOCALE=$LOCALESDIR/en.json
 export FUZZY=""
-export CLONE=""
+export REPOS=""
 export MAKE=""
 export AUDIT=""
 export EVERYTHING=""
-while getopts ":t:l:fcmae" opt
+while getopts ":t:l:frmae" opt
 do
     case $opt in
         t) export T="$OPTARG" ;;
         l) export LOCALE="$OPTARG" ;;
         f) FUZZY="true" ;;
-        c) CLONE="true" ;;
+        r) REPOS="true" ;;
         m) MAKE="true";;
         a) AUDIT="true";;
         e) EVERYTHING="true";;
@@ -238,16 +238,16 @@ if [ $OPTIND -eq 0 ]; then
     usage
 fi
 
-if [ -z "$CLONE" ] && [ -z "$AUDIT" ] ; then
+if [ -z "$REPOS" ] && [ -z "$AUDIT" ] ; then
     if [ -z "$T" ] && [ -z "$EVERYTHING" ] ; then
         echo "either specify a translation string or use -e to get everything " >&2
         usage
     fi
 fi
 
-if [ "$CLONE" ] ; then
+if [ "$REPOS" ] ; then
     if [ "$FUZZY" ] || [ "$T" ] || [ "$LOCALE" ] || [ "$MAKE" ]; then
-        echo "can't use clone with other options" >&2
+        echo "can't use REPOS with other options" >&2
         usage 
     fi
 fi
@@ -262,14 +262,14 @@ if [ ! -d "$TMPDIR" ];then
     exit 1
 fi
 
-if [ "$CLONE" ] ; then
+if [ "$REPOS" ] ; then
     echo "cloning repos"
-    clone
+    repos
     exit
 fi
 
 if [ ! "$(ls -A $TMPDIR)" ]; then
-    echo "the $TMPDIR dir is empty - did you run the clone option?" >&2
+    echo "the $TMPDIR dir is empty - did you run the repos option?" >&2
     exit 1
 fi
 

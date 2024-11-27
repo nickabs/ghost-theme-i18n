@@ -29,7 +29,7 @@ Once you have converted all the text sttrings you can then run the script (see u
 
 the script will create a candidate set of locales in `tmp/locales` based on the translations extracted from a number of ghost public repositories.  These repos are hardcoded in the script - feel free to add your own or to change the priority order
 
-The script will check for previously translated strings for the locale specified and include them in the created locale files.  If the string has not been translated previously, a placeholder entry will be created (in thesse cases the English version will still show in your theme until you manually add a suitable translation)
+The script will check for previously translated strings for the locale specified and include them in the created locale files.  If the string has not been translated previously, a placeholder entry will be created (in these cases the English version will still show in your theme until you manually add a suitable translation)
 
 a crude way to automate this process is below.  Bear in mind you will lose any manually completed translations if you overwrite existing locales with the output of this script
 

@@ -19,15 +19,15 @@ bash locale.sh -r # this will clone the repositories used to grab translations o
 # you need to manually download the zip files from each of the repositories listed in the script.
 # Unzip the zip files into the tmp directory before running the script
 
-USAGE: ./locales.sh [-c ] [ -a ] [ -t string ] [ -l locale ] [ -fm ]
+USAGE: ./locales.sh [ -e ] [ -t string  -l locale ] [ -fm ] [-c ] [ -a ]
     Options:
       -r repos    clone/pull repos to tmp
       -t string   string to translate (you can send mulitple strings separated by '|')
+      -e          when used instead of -t, this will create a summary of every available translation string
       -l locale   locale  (use 'all' to get all available translations)
       -f          fuzzy match (exact match otherwise)
-      -m          make the locale json files in tmp/locales
+      -m          make the locale json files in tmp/locales (the script displays to stdout otherwise)
       -a          report on coverage in previously created locale files
-      -e          make locales with every available translation string
 ```
 
 Once you have converted all the text sttrings you can then run the script (see usage statement above) with a -t parameter that lists all the strings you want to translate.

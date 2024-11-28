@@ -1,14 +1,14 @@
 #!/bin/bash
 function usage() {
-    echo "USAGE: $0 [-c ] [ -a ] [ -t string ] [ -l locale ] [ -fm ] 
+    echo "USAGE: $0 [ -e ] [ -t string  -l locale ] [ -fm ] [-c ] [ -a ]
     Options:
       -r repos    clone/pull repos to $TMPDIR
       -t string   string to translate (you can send mulitple strings separated by '|')
+      -e          when used instead of -t, this will create a summary of every available translation string 
       -l locale   locale  (use 'all' to get all available translations)
       -f          fuzzy match (exact match otherwise)
-      -m          make the locale json files in $LOCALESDIR
+      -m          make the locale json files in $LOCALESDIR (the script displays to stdout otherwise)
       -a          report on coverage in previously created locale files
-      -e          make locales with every available translation string 
       " >&2
     exit 1
 }
@@ -111,6 +111,7 @@ function tMatch() {
     }
     ' item="$1" fuzzy=$2 dedupe=$3
 }
+
 function getFormattedTranslations() {
     locale=$1
     # get the files, e.g tmp/Source/locales/en.json, and strip out the translation terms
@@ -150,6 +151,7 @@ function mkLocaleFiles() {
         printf("\t%s : %s",$3,$4) >> out;
     } END { if (ct> 0) print "\n}" >>out }' outputlocation=$1
 }
+
 function mkEnLocationFile() {
     echo $T | gawk '{ 
         ct=split($0,a,"|") 
@@ -162,6 +164,7 @@ function mkEnLocationFile() {
     } END { print "\n}" }
     ' 
 }
+
 function addPlaceholders() {
     tmp=$TMPDIR/$$
     for l in $(find $LOCALESDIR -type f) 
@@ -198,6 +201,7 @@ function addPlaceholders() {
         mv $tmp $l
     done
 }
+
 function coverage() {
     for l in $(find $LOCALESDIR -type f  |grep -v $ENLOCALE) 
     do
@@ -208,6 +212,49 @@ function coverage() {
 
         printf "%3.0f%% %s\n" $p $locale
     done
+}
+
+function checkOptions() {
+
+    if [ $OPTIND -eq 0 ]; then
+        usage
+    fi
+
+    if [ -z "$REPOS" ] && [ -z "$AUDIT" ] ; then
+        if [ -z "$T" ] && [ -z "$EVERYTHING" ] ; then
+            echo "either specify a translation string or use -e to get everything " >&2
+            usage
+        fi
+    fi
+
+    if [ "$REPOS" ] ; then
+        if [ "$FUZZY" ] || [ "$T" ] || [ "$LOCALE" ] || [ "$MAKE" ]; then
+            echo "can't use REPOS with other options" >&2
+            usage 
+        fi
+    fi
+
+    if [ "$T" ];then
+        if [ -z "$LOCALE" ]; then
+            echo "you must specify a locale (-l) when using -t" >&2
+            usage
+        fi
+    fi
+
+    if [ "$EVERYTHING" ]; then
+        if [ "$T" ] ; then
+            echo "you can't use -t and the -e everthing option together" >&2
+            usage
+        fi
+        if [ "$LOCALE" ] ; then
+            echo "the -e option extracts all available translations and can't be used with -l " >&2
+            usage
+        fi
+        if  [ -z "$MAKE" ]; then
+            echo "the -e option extracts all available translations and must be used with -m " >&2
+            usage
+        fi
+    fi
 }
 
 #
@@ -234,28 +281,9 @@ do
         \?) usage ;;
     esac 
 done
-if [ $OPTIND -eq 0 ]; then
-    usage
-fi
 
-if [ -z "$REPOS" ] && [ -z "$AUDIT" ] ; then
-    if [ -z "$T" ] && [ -z "$EVERYTHING" ] ; then
-        echo "either specify a translation string or use -e to get everything " >&2
-        usage
-    fi
-fi
 
-if [ "$REPOS" ] ; then
-    if [ "$FUZZY" ] || [ "$T" ] || [ "$LOCALE" ] || [ "$MAKE" ]; then
-        echo "can't use REPOS with other options" >&2
-        usage 
-    fi
-fi
-
-if [ "$T" ] && [ "$EVERYTHING" ]; then
-    echo "you can't use a search term and the -e everthing option together" >&2
-    usage
-fi
+checkOptions
 
 if [ ! -d "$TMPDIR" ];then
     echo "can't open $TMPDIR dir" 
@@ -281,9 +309,8 @@ fi
 if [ "$MAKE" ]; then
     rm -rf $LOCALESDIR && mkdir -p $LOCALESDIR
     if [ "$EVERYTHING" ]; then
-        echo "working - extracting all translations"
+        echo "working - extracting all translations for all locales"
         getFormattedTranslations "all" | tMatch "all" "" "dedupe" | mkLocaleFiles $LOCALESDIR
-        getFormattedTranslations en | tMatch "all" "" "dedupe" | mkLocaleFiles $LOCALESDIR
     else
         echo "working: extracting translations for $T"
         getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" "dedupe" | mkLocaleFiles $LOCALESDIR
@@ -294,8 +321,12 @@ if [ "$MAKE" ]; then
     addPlaceholders
     echo coverage report
     coverage
+    echo "done. See $LOCALESDIR for output"
 else
-    getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" | gawk -F'|' '{ split($0,a,"/"); printf("%s/%-20s%s | %s\n", $1, a[2], $3, $4) }'
-    echo "# Selected"
-    getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" "dedupe" | mkLocaleFiles stdout
+    echo "Working - finding translations"
+    getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" | gawk -F'|' '{ split($0,a,"/"); printf("%s/%-20s%s | %s\n", $1, a[2], $3, $4) }' |sort
+    if [ "$LOCALE" != "all" ]; then
+        echo "preferred translation:"
+        getFormattedTranslations $LOCALE | tMatch "$T" "$FUZZY" "dedupe" | mkLocaleFiles stdout
+    fi
 fi

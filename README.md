@@ -6,13 +6,18 @@ Before running the script you first need to convert all your hardcoded theme str
 
 Read the Ghost developer guide on translations [here](https://ghost.org/docs/themes/helpers/translate/).  
 
-The script will run on macos (you will need to install gawk (`brew install gawk`)) or linux. To run the script
+The script will run on macos (you will need to install gawk (`brew install gawk`) or linux. To run the script
 
 ```
+
 clone git@github.com:nickabs/ghost-theme-i18n.git
 cd ghost-theme-i18n
 mkdir tmp
-bash locale.sh
+bash locale.sh -r # this will clone the repositories used to grab translations on to your local machine
+
+# Note that, if you do not have remote access to github on your machine,
+# you need to manually download the zip files from each of the repositories listed in the script.
+# Unzip the zip files into the tmp directory before running the script
 
 USAGE: ./locales.sh [-c ] [ -a ] [ -t string ] [ -l locale ] [ -fm ]
     Options:
